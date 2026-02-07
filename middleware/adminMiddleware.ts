@@ -20,7 +20,7 @@ interface JwtPayload {
   exp?: number;
 }
 
-export const authMiddleware = async (
+export const adminMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction,
