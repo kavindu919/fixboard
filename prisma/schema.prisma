@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  email          String         @unique
+  password       String
+  name           String
+  avatar         String?
+  role           Role
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  assignedIssues Issue[]        @relation("AssignedIssues")
+  createdIssues  Issue[]        @relation("CreatedIssues")
+  activities     Activity[]     @relation("UserActivities")
+  refreshTokens  RefreshToken[] @relation("UserRefreshTokens")
+}
+
+model Issue {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String
+  status         Status
+  priority       Priority
+  severity       Severity
+  tags           String[]
+  dueDate        DateTime?
+  estimatedHours Int?
+  actualHours    Int?
+  attachments    Attachment[]
+  resolvedAt     DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  activities     Activity[]   @relation("IssueActivities")
+  assignedToId   String?      @db.ObjectId
+  assignedTo     User?        @relation("AssignedIssues", fields: [assignedToId], references: [id])
+  createdById    String       @db.ObjectId
+  createdBy      User         @relation("CreatedIssues", fields: [createdById], references: [id])
+}
+
+model Activity {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  issueId   String   @db.ObjectId
+  userId    String   @db.ObjectId
+  action    Action
+  changes   Changes?
+  comment   String?
+  timeStamp DateTime @default(now())
+  issue     Issue    @relation("IssueActivities", fields: [issueId], references: [id])
+  user      User     @relation("UserActivities", fields: [userId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
+  user      User     @relation("UserRefreshTokens", fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+type Attachment {
+  name       String
+  url        String
+  uploadedAt DateTime @default(now())
+}
+
+type Changes {
+  field    String
+  oldValue String
+  newValue String
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum Status {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum Priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum Severity {
+  minor
+  major
+  critical
+}
+
+enum Action {
+  created
+  updated
+  commented
+  status_changed
+  assigned
+}
