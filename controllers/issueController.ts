@@ -5,7 +5,6 @@ import {
   updateissueSchema,
   updateissuestatusSchema,
 } from "../lib/schema/issueSchema";
-import { success } from "zod";
 
 export const createIssue = async (req: Request, res: Response) => {
   try {
@@ -255,17 +254,64 @@ export const assignIssue = async (req: Request, res: Response) => {
 };
 
 export const getIssue = async (req: Request, res: Response) => {
-  const { id } = req.params;
-  if (!id) {
-    return res.status(400).json({
+  try {
+    const id = req.params.id;
+    if (typeof id !== "string") {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid issue id",
+      });
+    }
+    if (!id) {
+      return res.status(404).json({
+        success: false,
+        message: "Missing required fields",
+      });
+    }
+    const issue = await prisma.issue.findUnique({
+      where: { id: id },
+    });
+    if (!issue) {
+      return res.status(404).json({
+        success: false,
+        message: "Issue not found",
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      data: issue,
+      message: "Data retrieved successfully",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
       success: false,
-      message: "Missing required fields",
+      message: "Internal server error",
     });
   }
-  const issue = await prisma.issue.findUnique({
-    where: { id },
-    select: {
-      id: true,
-    },
-  });
+};
+
+export const getAllIssues = async (req: Request, res: Response) => {
+  try {
+    const {
+      search,
+      status,
+      priority,
+      severity,
+      assignedTo,
+      createdBy,
+      page = "1",
+      limit = "20",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query;
+
+    const where: any = {};
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 };

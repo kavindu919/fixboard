@@ -3,6 +3,7 @@ import { prisma } from "../lib/prisma";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { loginSchema, registerSchema } from "../lib/schema/userSchema";
+import { ZodError } from "zod";
 
 export const userRegistration = async (req: Request, res: Response) => {
   try {
@@ -52,6 +53,12 @@ export const userRegistration = async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: error.issues[0]?.message,
+      });
+    }
     console.log(error);
     return res.status(500).json({
       success: false,
@@ -94,11 +101,14 @@ export const userLogin = async (req: Request, res: Response) => {
       process.env.JWT_SECRET!,
       { expiresIn: "2d" },
     );
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 2 * 24 * 60 * 60 * 1000,
+      sameSite: "strict",
+    });
     return res.status(200).json({
       success: true,
-      data: {
-        token,
-      },
       message: "User login successfully",
     });
   } catch (error) {
@@ -112,6 +122,11 @@ export const userLogin = async (req: Request, res: Response) => {
 
 export const userLogout = async (req: Request, res: Response) => {
   try {
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+    });
     return res.status(200).json({
       success: true,
       message: "Logged out successfully",

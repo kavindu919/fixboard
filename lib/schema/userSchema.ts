@@ -9,7 +9,11 @@ export const registerSchema = z.object({
   password: z
     .string({ message: "Password is required" })
     .min(6, "Password must be at least 6 characters")
-    .max(100, "Password cannot exceed 100 characters"),
+    .max(100, "Password cannot exceed 100 characters")
+    .regex(
+      /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[\W_]).*$/,
+      "Password must contain uppercase, lowercase, number, and special character",
+    ),
 });
 
 export const loginSchema = z.object({
