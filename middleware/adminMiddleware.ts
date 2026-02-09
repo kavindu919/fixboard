@@ -14,7 +14,7 @@ declare global {
 }
 
 interface JwtPayload {
-  userId: string;
+  id: string;
   email: string;
   iat?: number;
   exp?: number;
@@ -26,6 +26,7 @@ export const adminMiddleware = async (
   next: NextFunction,
 ) => {
   try {
+    console.log("Here");
     const authToken = req.cookies.token;
     if (!authToken) {
       return res
@@ -46,7 +47,7 @@ export const adminMiddleware = async (
 
     const isAdmin = await prisma.user.findUnique({
       where: {
-        id: decoded.userId,
+        id: decoded.id,
       },
       select: {
         role: true,
@@ -65,7 +66,7 @@ export const adminMiddleware = async (
       });
     }
     req.user = {
-      id: decoded.userId,
+      id: decoded.id,
       email: decoded.email,
     };
 
