@@ -5,11 +5,13 @@ import {
   updateissueSchema,
   updateissuestatusSchema,
 } from "../lib/schema/issueSchema";
+import { ZodError } from "zod";
+import { priorityLabelMap, statusLabelMap } from "../lib/helpers/issueHelper";
 
 export const createIssue = async (req: Request, res: Response) => {
   try {
     const validateData = issueSchema.parse(req.body);
-    const userId = req.body.user.id;
+    const userId = req.user?.id;
     if (!userId) {
       return res
         .status(400)
@@ -27,6 +29,17 @@ export const createIssue = async (req: Request, res: Response) => {
         tags: validateData.tags || [],
         dueDate: validateData.dueDate ?? null,
         estimatedHours: validateData.estimatedHours ?? null,
+        attachments: validateData.attachments
+          ? {
+              set: validateData.attachments.map((att) => ({
+                name: att.name,
+                url: att.url,
+                uploadedAt: att.uploadedAt
+                  ? new Date(att.uploadedAt)
+                  : new Date(),
+              })),
+            }
+          : [],
       },
       include: {
         createdBy: {
@@ -71,6 +84,12 @@ export const createIssue = async (req: Request, res: Response) => {
       message: "Issue created successfully",
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: error.issues[0]?.message,
+      });
+    }
     console.log(error);
     return res.status(500).json({
       success: false,
@@ -304,11 +323,87 @@ export const getAllIssues = async (req: Request, res: Response) => {
       limit = "20",
       sortBy = "createdAt",
       sortOrder = "desc",
-    } = req.query;
+    } = req.query as Record<string, string>;
 
     const where: any = {};
+
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+    if (severity) where.severity = severity;
+    if (assignedTo) where.assignedToId = assignedTo;
+    if (createdBy) where.createdById = createdBy;
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+
+    const issues = await prisma.issue.findMany({
+      where,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        severity: true,
+        dueDate: true,
+        assignedTo: {
+          select: {
+            name: true,
+          },
+        },
+        createdAt: true,
+      },
+      skip: (Number(page) - 1) * Number(limit),
+      take: Number(limit),
+    });
+
+    const formattedIsssue = issues.map((item) => ({
+      ...item,
+      status: statusLabelMap[item.status],
+      priority: priorityLabelMap[item.priority],
+      assignedToName: item.assignedTo?.name,
+    }));
+
+    const total = await prisma.issue.count({ where });
+
+    return res.json({
+      success: true,
+      data: formattedIsssue,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+      },
+    });
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getAllUsers = async (req: Request, res: Response) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+    return res.status(200).json({
+      success: true,
+      data: users,
+    });
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

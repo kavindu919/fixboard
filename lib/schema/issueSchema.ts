@@ -12,12 +12,11 @@ export const issueSchema = z.object({
   severity: z.enum(["minor", "major", "critical"]).optional(),
   assignedToId: z.string().optional(),
   tags: z.array(z.string()).optional(),
-  dueDate: z
-    .string()
-    .refine((val) => !val || !isNaN(Date.parse(val)), {
-      message: "Invalid date format",
-    })
-    .optional(),
+  dueDate: z.preprocess((val) => {
+    if (!val) return null;
+    const date = new Date(val as string);
+    return isNaN(date.getTime()) ? null : date;
+  }, z.date().nullable()),
   estimatedHours: z
     .number({
       message: "Estimated hours must be a number",
@@ -35,9 +34,14 @@ export const issueSchema = z.object({
   attachments: z
     .array(
       z.object({
-        id: z.string(),
-        url: z.string().url(),
-        filename: z.string(),
+        name: z.string({ message: "Attachment name is required" }),
+        url: z.string().url({ message: "Attachment URL must be valid" }),
+        uploadedAt: z
+          .string()
+          .refine((val) => !val || !isNaN(Date.parse(val)), {
+            message: "Invalid date format for uploadedAt",
+          })
+          .optional(),
       }),
     )
     .optional(),
