@@ -101,7 +101,13 @@ export const createIssue = async (req: Request, res: Response) => {
 export const updateIssue = async (req: Request, res: Response) => {
   try {
     const validData = updateissueSchema.parse(req.body);
-    const userId = req.body.user.id;
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required field" });
+    }
+
     const existingIssue = await prisma.issue.findUnique({
       where: { id: validData.id },
     });
@@ -124,6 +130,18 @@ export const updateIssue = async (req: Request, res: Response) => {
         tags: validData.tags || [],
         dueDate: validData.dueDate ?? null,
         estimatedHours: validData.estimatedHours ?? null,
+        actualHours: validData.actualHours ?? null,
+        attachments: validData.attachments
+          ? {
+              set: validData.attachments.map((att) => ({
+                name: att.name,
+                url: att.url,
+                uploadedAt: att.uploadedAt
+                  ? new Date(att.uploadedAt)
+                  : new Date(),
+              })),
+            }
+          : [],
       },
     });
     await prisma.activity.create({
@@ -139,6 +157,12 @@ export const updateIssue = async (req: Request, res: Response) => {
       message: "Issue updated successfully",
     });
   } catch (error) {
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: error.issues[0]?.message,
+      });
+    }
     console.log(error);
     return res.status(500).json({
       success: false,
@@ -149,7 +173,7 @@ export const updateIssue = async (req: Request, res: Response) => {
 
 export const updateIssueStatus = async (req: Request, res: Response) => {
   try {
-    const validData = updateissuestatusSchema.parse(req.body);
+    const validData = updateissueSchema.parse(req.body);
     const userId = req.body.user.id;
     const existingIssue = await prisma.issue.findUnique({
       where: { id: validData.id },
@@ -289,6 +313,21 @@ export const getIssue = async (req: Request, res: Response) => {
     }
     const issue = await prisma.issue.findUnique({
       where: { id: id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        status: true,
+        priority: true,
+        severity: true,
+        createdById: true,
+        assignedToId: true,
+        tags: true,
+        dueDate: true,
+        estimatedHours: true,
+        actualHours: true,
+        attachments: true,
+      },
     });
     if (!issue) {
       return res.status(404).json({

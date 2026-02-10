@@ -67,6 +67,7 @@ export const updateissueSchema = z.object({
     .refine((val) => !val || !isNaN(Date.parse(val)), {
       message: "Invalid date format",
     })
+    .nullable()
     .optional(),
   estimatedHours: z
     .number({
@@ -74,6 +75,7 @@ export const updateissueSchema = z.object({
     })
     .int()
     .positive()
+    .nullable()
     .optional(),
   actualHours: z
     .number({
@@ -81,13 +83,19 @@ export const updateissueSchema = z.object({
     })
     .int()
     .positive()
+    .nullable()
     .optional(),
   attachments: z
     .array(
       z.object({
-        id: z.string(),
-        url: z.string().url(),
-        filename: z.string(),
+        name: z.string({ message: "Attachment name is required" }),
+        url: z.string().url({ message: "Attachment URL must be valid" }),
+        uploadedAt: z
+          .string()
+          .refine((val) => !val || !isNaN(Date.parse(val)), {
+            message: "Invalid date format for uploadedAt",
+          })
+          .optional(),
       }),
     )
     .optional(),
