@@ -5,6 +5,7 @@ import {
   deleteIssue,
   getAllIssues,
   getAllUsers,
+  getIssue,
   updateIssue,
   updateIssueStatus,
 } from "../controllers/issueController";
@@ -15,9 +16,11 @@ const issueRoute = express.Router();
 issueRoute.post("/create-issue", authMiddleware, createIssue);
 issueRoute.post("/update-issue", authMiddleware, updateIssue);
 issueRoute.post("/update-issue-status", authMiddleware, updateIssueStatus);
-issueRoute.delete("/delete-issue", authMiddleware, deleteIssue);
+issueRoute.post("/delete-issue", authMiddleware, deleteIssue);
 issueRoute.post("/assign-issue", authMiddleware, assignIssue);
 issueRoute.get("/all-users", authMiddleware, getAllUsers);
 issueRoute.get("/all-issues", authMiddleware, getAllIssues);
+issueRoute.get("/get-issue/:id", authMiddleware, getIssue);
+issueRoute.post("/update-issues", authMiddleware, updateIssue);
 
 export default issueRoute;
