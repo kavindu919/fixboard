@@ -22,5 +22,6 @@ issueRoute.get("/all-users", authMiddleware, getAllUsers);
 issueRoute.get("/all-issues", authMiddleware, getAllIssues);
 issueRoute.get("/get-issue/:id", authMiddleware, getIssue);
 issueRoute.post("/update-issues", authMiddleware, updateIssue);
+issueRoute.post("/update-issuess-status", authMiddleware, updateIssueStatus);
 
 export default issueRoute;

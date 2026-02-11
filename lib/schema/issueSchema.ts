@@ -105,11 +105,5 @@ export const updateissuestatusSchema = z.object({
   id: z.string({
     message: "Issue id is required",
   }),
-  status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
-  resolvedAt: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
-    message: "Invalid date format",
-  }),
-  closedAt: z.string().refine((val) => !val || !isNaN(Date.parse(val)), {
-    message: "Invalid date format",
-  }),
+  status: z.enum(["open", "in_progress", "resolved", "closed"]),
 });

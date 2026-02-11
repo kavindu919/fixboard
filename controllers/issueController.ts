@@ -173,8 +173,13 @@ export const updateIssue = async (req: Request, res: Response) => {
 
 export const updateIssueStatus = async (req: Request, res: Response) => {
   try {
-    const validData = updateissueSchema.parse(req.body);
-    const userId = req.body.user.id;
+    const validData = updateissuestatusSchema.parse(req.body);
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required field" });
+    }
     const existingIssue = await prisma.issue.findUnique({
       where: { id: validData.id },
     });
