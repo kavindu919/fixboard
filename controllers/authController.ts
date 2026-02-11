@@ -139,3 +139,18 @@ export const userLogout = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const checkAuthentication = async (req: Request, res: Response) => {
+  try {
+    return res.json({
+      success: true,
+      user: req.user,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
