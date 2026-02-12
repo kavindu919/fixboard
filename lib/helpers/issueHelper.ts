@@ -3,6 +3,7 @@ export const statusLabelMap: Record<string, string> = {
   ongoing: "Ongoing",
   resolved: "Resolved",
   closed: "Closed",
+  in_progress: "Progress",
 };
 
 export const priorityLabelMap: Record<string, string> = {
