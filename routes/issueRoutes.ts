@@ -7,6 +7,7 @@ import {
   getAllIssues,
   getAllUsers,
   getIssue,
+  getIssueCountByStatus,
   updateIssue,
   updateIssueStatus,
 } from "../controllers/issueController";
@@ -25,5 +26,6 @@ issueRoute.get("/get-issue/:id", authMiddleware, getIssue);
 issueRoute.post("/update-issues", authMiddleware, updateIssue);
 issueRoute.post("/update-issuess-status", authMiddleware, updateIssueStatus);
 issueRoute.get("/issues-export", authMiddleware, exportIssues);
+issueRoute.get("/issues-count", authMiddleware, getIssueCountByStatus);
 
 export default issueRoute;

@@ -533,3 +533,105 @@ export const exportIssues = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getIssueCountByStatus = async (req: Request, res: Response) => {
+  try {
+    const now = new Date();
+
+    const [
+      statusGrouped,
+      overdueCount,
+      unassignedCount,
+      priorityGrouped,
+      severityGrouped,
+      hoursAggregate,
+      recentActivitiesRaw,
+    ] = await Promise.all([
+      prisma.issue.groupBy({
+        by: ["status"],
+        _count: { status: true },
+      }),
+      prisma.issue.count({
+        where: {
+          status: { in: ["open", "in_progress"] },
+          dueDate: { lt: now },
+        },
+      }),
+      prisma.issue.count({
+        where: { assignedToId: null },
+      }),
+      prisma.issue.groupBy({
+        by: ["priority"],
+        _count: { priority: true },
+      }),
+      prisma.issue.groupBy({
+        by: ["severity"],
+        _count: { severity: true },
+      }),
+      prisma.issue.aggregate({
+        _sum: {
+          estimatedHours: true,
+          actualHours: true,
+        },
+      }),
+      prisma.activity.findMany({
+        orderBy: { timeStamp: "desc" },
+        take: 10,
+        include: {
+          issue: { select: { title: true } },
+          user: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    const statusStats = {
+      open: 0,
+      in_progress: 0,
+      resolved: 0,
+      closed: 0,
+    };
+
+    statusGrouped.forEach((item) => {
+      statusStats[item.status as keyof typeof statusStats] = item._count.status;
+    });
+
+    const priorityStats: Record<string, number> = {};
+    priorityGrouped.forEach((item) => {
+      priorityStats[item.priority] = item._count.priority;
+    });
+
+    const severityStats: Record<string, number> = {};
+    severityGrouped.forEach((item) => {
+      severityStats[item.severity] = item._count.severity;
+    });
+
+    const recentActivities = recentActivitiesRaw.map((activity) => ({
+      id: activity.id,
+      issueId: activity.issueId,
+      issueTitle: activity.issue?.title || "",
+      userName: activity.user?.name || "",
+      action: activity.action,
+      comment: activity.comment,
+      timeStamp: activity.timeStamp,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        ...statusStats,
+        overdueCount,
+        unassignedCount,
+        priorityStats,
+        severityStats,
+        estimatedHoursTotal: hoursAggregate._sum.estimatedHours || 0,
+        actualHoursTotal: hoursAggregate._sum.actualHours || 0,
+        recentActivities,
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
