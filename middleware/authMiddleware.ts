@@ -7,6 +7,7 @@ declare global {
       user?: {
         id: string;
         email: string;
+        name: string;
       };
     }
   }
@@ -15,6 +16,7 @@ declare global {
 interface JwtPayload {
   id: string;
   email: string;
+  name: string;
   iat?: number;
   exp?: number;
 }
@@ -45,6 +47,7 @@ export const authMiddleware = async (
 
     req.user = {
       id: decoded.id,
+      name: decoded.name,
       email: decoded.email,
     };
 
