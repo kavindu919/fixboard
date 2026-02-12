@@ -7,14 +7,16 @@ declare global {
       user?: {
         id: string;
         email: string;
+        name: string;
       };
     }
   }
 }
 
 interface JwtPayload {
-  userId: string;
+  id: string;
   email: string;
+  name: string;
   iat?: number;
   exp?: number;
 }
@@ -25,20 +27,11 @@ export const authMiddleware = async (
   next: NextFunction,
 ) => {
   try {
-    if (!req.headers.authorization) {
-      return res.status(401).json({
-        success: false,
-        message: "Missing auth headers",
-      });
-    }
-
-    const [type, authToken] = req.headers.authorization.split(" ");
-
-    if (!authToken || type !== "Bearer") {
-      return res.status(403).json({
-        success: false,
-        message: "Invalid authorization format",
-      });
+    const authToken = req.cookies.token;
+    if (!authToken) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Not authenticated" });
     }
 
     const jwtSecret = process.env.JWT_SECRET;
@@ -53,7 +46,8 @@ export const authMiddleware = async (
     const decoded = jwt.verify(authToken, jwtSecret) as JwtPayload;
 
     req.user = {
-      id: decoded.userId,
+      id: decoded.id,
+      name: decoded.name,
       email: decoded.email,
     };
 
