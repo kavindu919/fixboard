@@ -7,6 +7,7 @@ import {
 } from "../lib/schema/issueSchema";
 import { ZodError } from "zod";
 import { priorityLabelMap, statusLabelMap } from "../lib/helpers/issueHelper";
+import { Parser } from "json2csv";
 
 export const createIssue = async (req: Request, res: Response) => {
   try {
@@ -448,6 +449,82 @@ export const getAllUsers = async (req: Request, res: Response) => {
       success: true,
       data: users,
     });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const exportIssues = async (req: Request, res: Response) => {
+  const { format = "csv" } = req.query as { format?: string };
+
+  try {
+    const {
+      search,
+      status,
+      priority,
+      severity,
+      assignedTo,
+      createdBy,
+      page = "1",
+      limit = "20",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as Record<string, string>;
+
+    const where: any = {};
+
+    if (status) where.status = status;
+    if (priority) where.priority = priority;
+    if (severity) where.severity = severity;
+    if (assignedTo) where.assignedToId = assignedTo;
+    if (createdBy) where.createdById = createdBy;
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+    const issues = await prisma.issue.findMany({
+      where,
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        severity: true,
+        dueDate: true,
+        assignedTo: { select: { name: true } },
+        createdAt: true,
+      },
+    });
+    const formattedIsssues = issues.map((item) => ({
+      id: item.id,
+      title: item.title,
+      status: statusLabelMap[item.status],
+      priority: priorityLabelMap[item.priority],
+      severity: item.severity,
+      assignedTo: item.assignedTo?.name || "",
+      dueDate: item.dueDate ? item.dueDate.toISOString().split("T")[0] : "-",
+      createdAt: item.createdAt
+        ? item.createdAt.toISOString().split("T")[0]
+        : "-",
+    }));
+    if (format === "json") {
+      return res.status(200).json({
+        success: true,
+        message: "Issues export successfully",
+        data: formattedIsssues,
+      });
+    }
+    const praser = new Parser();
+    const csv = praser.parse(formattedIsssues);
+    res.header("Content-Type", "text/csv");
+    return res.status(200).send(csv);
   } catch (error) {
     console.error(error);
     return res.status(500).json({

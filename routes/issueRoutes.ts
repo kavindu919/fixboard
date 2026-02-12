@@ -3,6 +3,7 @@ import {
   assignIssue,
   createIssue,
   deleteIssue,
+  exportIssues,
   getAllIssues,
   getAllUsers,
   getIssue,
@@ -23,5 +24,6 @@ issueRoute.get("/all-issues", authMiddleware, getAllIssues);
 issueRoute.get("/get-issue/:id", authMiddleware, getIssue);
 issueRoute.post("/update-issues", authMiddleware, updateIssue);
 issueRoute.post("/update-issuess-status", authMiddleware, updateIssueStatus);
+issueRoute.get("/issues-export", authMiddleware, exportIssues);
 
 export default issueRoute;
