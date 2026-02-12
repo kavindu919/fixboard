@@ -329,6 +329,8 @@ export const getIssue = async (req: Request, res: Response) => {
         assignedToId: true,
         tags: true,
         dueDate: true,
+        closedAt: true,
+        resolvedAt: true,
         estimatedHours: true,
         actualHours: true,
         attachments: true,
