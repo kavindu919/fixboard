@@ -109,6 +109,11 @@ export const userLogin = async (req: Request, res: Response) => {
     });
     return res.status(200).json({
       success: true,
+      data: {
+        id: isUser.id,
+        name: isUser.name,
+        email: isUser.email,
+      },
       message: "User login successfully",
     });
   } catch (error) {
