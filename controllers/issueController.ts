@@ -635,3 +635,90 @@ export const getIssueCountByStatus = async (req: Request, res: Response) => {
     });
   }
 };
+
+export const getMyIssues = async (req: Request, res: Response) => {
+  try {
+    const {
+      search,
+      status,
+      priority,
+      severity,
+      assignedTo,
+      page = "1",
+      limit = "20",
+      sortBy = "createdAt",
+      sortOrder = "desc",
+    } = req.query as Record<string, string>;
+
+    const userId = req.user?.id;
+    if (!userId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing required field" });
+    }
+    const where: any = {};
+
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+      ];
+    }
+    if (status) {
+      where.status = status;
+    }
+    if (priority) {
+      where.priority = priority;
+    }
+    if (severity) {
+      where.severity = severity;
+    }
+    if (assignedTo) {
+      where.assignedTo = assignedTo;
+    }
+    const issues = await prisma.issue.findMany({
+      where,
+      orderBy: {
+        [sortBy]: sortOrder,
+      },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        priority: true,
+        severity: true,
+        dueDate: true,
+        assignedTo: {
+          select: {
+            name: true,
+          },
+        },
+        createdAt: true,
+      },
+      skip: (Number(page) - 1) * Number(limit),
+      take: Number(limit),
+    });
+
+    const formattedIsssue = issues.map((item) => ({
+      ...item,
+      status: statusLabelMap[item.status],
+      priority: priorityLabelMap[item.priority],
+      assignedToName: item.assignedTo?.name,
+    }));
+    const total = await prisma.issue.count({ where });
+    return res.json({
+      success: true,
+      data: formattedIsssue,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
