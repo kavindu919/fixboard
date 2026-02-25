@@ -21,6 +21,7 @@ model User {
   createdIssues  Issue[]        @relation("CreatedIssues")
   activities     Activity[]     @relation("UserActivities")
   refreshTokens  RefreshToken[] @relation("UserRefreshTokens")
+  comments       Comment[]      @relation("UserComment")
 }
 
 model Issue {
@@ -44,6 +45,7 @@ model Issue {
   assignedTo     User?        @relation("AssignedIssues", fields: [assignedToId], references: [id])
   createdById    String       @db.ObjectId
   createdBy      User         @relation("CreatedIssues", fields: [createdById], references: [id])
+  comments       Comment[]    @relation("IssueComments")
 }
 
 model Activity {
@@ -66,6 +68,17 @@ model RefreshToken {
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Comment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  text        String
+  createdById String   @db.ObjectId
+  issueId     String   @db.ObjectId
+  createdBy   User     @relation("UserComment", fields: [createdById], references: [id])
+  issue       Issue    @relation("IssueComments", fields: [issueId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 type Attachment {
