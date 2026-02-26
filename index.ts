@@ -5,6 +5,7 @@ import authRoute from "./routes/authRoutes";
 import cookieParser from "cookie-parser";
 import issueRoute from "./routes/issueRoutes";
 import commentRoute from "./routes/commentRoutes";
+import userRoute from "./routes/userRoutes";
 
 dotenv.config();
 const app = express();
@@ -21,6 +22,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoute);
 app.use("/api/issues", issueRoute);
 app.use("/api/comment", commentRoute);
+app.use("/api/users", userRoute);
 
 app.listen(process.env.PORT, () => {
   console.log(`Server run on port ${process.env.PORT}`);
